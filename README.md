@@ -9,6 +9,8 @@ Current state of project:
 
 - src\visualization\visualize.py visualizes the first 100 notes of each Instrument part, some of which run longer than the other part.  Here the parts are the right hand part and the left hand part
 
+- src\features\build_features.py has a function that encodes the changes as differences in the time series of Pitch, Start, End, and Velocity data.  It also has an decoder to restore the symbolic music exactly as it was
+
 Future scope:
 
 The data that the visualization runs on is a CSV file that is short enough to paste into a GPT 4 prompt, so one can ask GPT 4 how to find the patterns and encode the symbolic music, thereby capturing the essence.  This might be iterated using the OpenAI API, so that the LLM gets feedback as to how well the encoding and decoding is going, and can generate a new version of the code.  Executing code automatically that has been generated from an AI, without a human looking at it first, may pose an increasing amount of risk (though right now it is neglible), so a human will probably be in the loop, with as much automation as possible
