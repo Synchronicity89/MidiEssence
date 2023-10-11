@@ -3,19 +3,22 @@ import pandas as pd
 # conda install -c conda-forge music21 
 from music21 import converter, note, chord
 
-def brev(my_float, multiplier=4):
-    my_floatm = my_float * multiplier
-    my_string = str(my_floatm)
-    if my_floatm == int(my_floatm):
-        my_string = str(int(my_floatm))
-    if my_string.endswith(".0"):
-        my_string = my_string[:-2]
-    if my_string == "0":
-        my_string = ""
-    return my_string
-
 # Define the folder containing the MIDI files
 folder_path = "../../data/raw/BachInventions"
+
+# if the folder does not exist, then create it
+if not os.path.exists(folder_path):
+    os.makedirs(folder_path)
+    # also create the other folders in the data folder: interim, processed, and external
+    os.makedirs("../../data/interim")
+    os.makedirs("../../data/processed")
+    os.makedirs("../../data/external")
+    # download the MIDI files from the web based on this url pattern https://www.bachcentral.com/invent/invent1.mid, download 1-8
+    for i in range(1, 9):
+        url = "https://www.bachcentral.com/invent/invent" + str(i) + ".mid"
+        print("Downloading " + url)
+        os.system("curl -o " + folder_path + "/invent" + str(i) + ".mid " + url)
+
 
 # Get a list of all files in the folder
 file_list = os.listdir(folder_path)
