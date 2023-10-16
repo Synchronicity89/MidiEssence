@@ -2,6 +2,22 @@
 from numpy import int64
 import pandas as pd
 
+def CompareDataframes(df, df_decoded):
+    if df.equals(df_decoded) == False:
+        print("The decoded dataframe is different from the original dataframe.")
+    # show the differences between the two dataframes
+        print(df.compare(df_decoded))
+
+    # show the differences between the two dataframes without using compare, but by iterating over the rows
+        for index, row in df.iterrows():
+            if row.equals(df_decoded.iloc[index]) == False:
+                print("The decoded dataframe row {} is different from the original dataframe row {}.".format(index, index))
+                print(row)
+                print(df_decoded.iloc[index])
+                print()
+    else:
+        print("The decoded dataframe is the same as the original dataframe.")
+
 def encode_diffs(df):
     df_copy = df.copy()
     # create an empty dataframe called df_encoded with the same columns as the input dataframe
@@ -112,20 +128,8 @@ print("df_decoded:")
 print()
 print(df_decoded)
 # check that the decoded dataframe is the same as the original dataframe
-if df.equals(df_decoded) == False:
-    print("The decoded dataframe is different from the original dataframe.")
-    # show the differences between the two dataframes
-    print(df.compare(df_decoded))
 
-    # show the differences between the two dataframes without using compare, but by iterating over the rows
-    for index, row in df.iterrows():
-        if row.equals(df_decoded.iloc[index]) == False:
-            print("The decoded dataframe row {} is different from the original dataframe row {}.".format(index, index))
-            print(row)
-            print(df_decoded.iloc[index])
-            print()
-else:
-    print("The decoded dataframe is the same as the original dataframe.")
+CompareDataframes(df, df_decoded)
 
 print(df_decoded.info())
 print(df.info())
