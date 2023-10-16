@@ -276,26 +276,32 @@ chromatic_scale_diffs = [2, 2, 1, 2, 2, 2, 1, 2, 2, 1, 2, 2, 2, 1, 2, 2, 1, 2, 2
 actual_pitch_diff_data_needing_a_diatonic_match = [7, 5, -2, 2, -3]
 # find all the subsequences of chromatic_scale_diffs that matches each element of actual_pitch_diff_data_needing_a_diatonic_match
 # for each subsequence, find the index of the first element of the subsequence in chromatic_scale_diffs. Just start with one for now
-target = actual_pitch_diff_data_needing_a_diatonic_match[0]
 def get_matches(chromatic_scale_diffs, target):
+    target_orig = target
+    target = abs(target)
     matches = []
     i = 0
     j = i
     for i in range(len(chromatic_scale_diffs)):
         match = False
-        for j in range(i+1, len(chromatic_scale_diffs)):
-            if sum(chromatic_scale_diffs[i:j]) == target:
-                match = True
-                break
+        if target_orig >= 0:
+            for j in range(i+1, len(chromatic_scale_diffs)):
+                if sum(chromatic_scale_diffs[i:j]) == target:
+                    match = True
+                    break
+        else:
+            if i > 0:
+                for j in range(i-1, -1, -1):
+                    if sum(chromatic_scale_diffs[j:i-1]) == target:
+                        match = True
+                        break
         if match:
-            matches += [(i, j)]
+            matches += [(i, j, target_orig)]
+            i = j
     print("match:", match)
     print("i:", i, "j:", j) 
     print("matches:", matches)
     return matches
-
-matches = get_matches(chromatic_scale_diffs, target)
-print("matches:", matches)
 
 # Now, find the first match that matches the whole pattern
 # for each match, check if the whole pattern matches
@@ -305,10 +311,10 @@ print("matches:", matches)
 index = 0
 match_dict = {}
 for pitch_diff in actual_pitch_diff_data_needing_a_diatonic_match:
-    matches = get_matches(chromatic_scale_diffs, abs(pitch_diff))
+    matches = get_matches(chromatic_scale_diffs, pitch_diff)
     match_dict[index] = matches
     print("matches:", matches)
-    for start_idx, end_idx in matches:
+    for start_idx, end_idx, target in matches:
         total = sum(chromatic_scale_diffs[start_idx:end_idx])
         if total == pitch_diff:
             print(f"The pattern can legally start from index {start_idx} in chromatic_scale_diffs.")
@@ -328,7 +334,8 @@ for key, value in match_dict.items():
     for ij_coord in value:
         print('ij_coord', ij_coord, type(ij_coord))
         # append match_list with a new tuple that starts with the key, and then ij_coord[0] and ij_coord[1]
-        match_list.append((key, ij_coord[0], ij_coord[1]))
+        # , actual_pitch_diff_data_needing_a_diatonic_match[key]
+        match_list.append((key, ij_coord[0], ij_coord[1], ij_coord[2]))
 print("match_list:", match_list)
 
 
@@ -353,7 +360,9 @@ for i in range(len(sorted_match_list)):
         # first_match = sorted_match_list[j][0] == sorted_match_list[i][0] + 1
         # second_match = sorted_match_list[j][1] == sorted_match_list[i][2] + 1
         first_match = sorted_match_list[j][0] == (last_added[0] + 1)
-        second_match = sorted_match_list[j][1] == (last_added[2] + 1 )
+        target_p = 1 if sorted_match_list[j][3] > 0 else -1
+
+        second_match = sorted_match_list[j][1] == (last_added[2] + target_p )
         if first_match:
             if second_match:
                 more.append(sorted_match_list[j])
@@ -363,3 +372,27 @@ for i in range(len(sorted_match_list)):
     
 print("list_of_lists:", list_of_lists)
         
+# sort list_of_lists by the length of each list, from longest to shortest
+sorted_list_of_lists = sorted(list_of_lists, key=lambda x: len(x), reverse=True)
+# keep the longest lists that have the same length, and print only them
+longest_lists = []
+for i in range(len(sorted_list_of_lists)):
+    if len(sorted_list_of_lists[i]) == len(sorted_list_of_lists[0]):
+        longest_lists.append(sorted_list_of_lists[i])
+    else:
+        break
+print("longest_lists:", longest_lists)
+# for each tuple in each list in longest_lists, use the second and third to select and sum up the elements of chromatic_scale_diffs in that range, even if the range goes backwards
+# if the sum is equal to the absolute value of the fourth element of the tuple, then print the whole tuple, followd by " OK"
+# if the sum is not equal to the absolute value of the fourth element, then print the whole tuple, followed by " NOT OK"
+for i in range(len(longest_lists)):
+    for k in range(len(longest_lists[i])):
+        start_idx = longest_lists[i][k][1]
+        end_idx = longest_lists[i][k][2]
+        target = longest_lists[i][k][3]
+        total = sum(chromatic_scale_diffs[start_idx:end_idx])
+        if abs(total) == abs(target):
+            print(longest_lists[i][k], "OK, target:", target, "total:", total)
+        else:
+            print(longest_lists[i][k], "NOT OK, target:", target, "total:", total)
+
