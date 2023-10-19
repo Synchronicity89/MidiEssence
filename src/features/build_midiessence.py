@@ -16,32 +16,10 @@ class MidiEssence:
         'Minor': [0, 3, 7]
     }
     
-    def __init__(self, original_pitches):
-        self.original_pitches = original_pitches
+    def __init__(self):
         self.algorithm_encoding = ""
-        
-    def detect_scale(self, pitches):
-        for scale_name, scale_pitches in self.SCALES.items():
-            if set(pitches).issubset(set(scale_pitches)):
-                return scale_name
-        return None
-    
-    # def detect_chord(self, pitches):
-    #     for chord_name, chord_pitches in self.CHORDS.items():
-    #         if set(pitches) == set(chord_pitches):
-    #             return chord_name
-    #     return None
-    
-    def find_common_patterns(self, min_length=4, max_length=8):
-        common_patterns = []
-        for length in range(min_length, max_length + 1):
-            patterns = [tuple(self.original_pitches[i:i+length]) for i in range(len(self.original_pitches)-length+1)]
-            pattern_freq = Counter(patterns)
-            common_patterns.extend(pattern_freq.most_common(3))
-        return common_patterns
-    
+
     def algorithm_encoding_generator(self):
-        common_patterns = self.find_common_patterns()
         
         # Initialize result
         self.algorithm_encoding += '''
@@ -194,68 +172,37 @@ class MidiEssence:
                 print(f"pit[{indx}], {p} != {pit[indx]}")
             indx += 1
 
+if __name__ == "__main__":
 
+    # Example usage
+    # original_pitches = [60, 62, 64, 60, 65, 67, 69, 65, 67, 69] * 20
 
+    df = pd.read_pickle("../../data/interim/note_data_diff_encoded.pkl")
+    pitch_data = df["Pitch_diff"].astype('int').tolist()
 
+    # remove bogus data
+    # remove 10th element from pitch_data, and other cheap trills
+    pitch_data.pop(10)
+    pitch_data.pop(22)
 
+    # read the first 200 pitches from pitch_data into a list called original_pitches
+    original_pitches = pitch_data[0:200]
+    # print the first seven elements of original_pitches, and a header
+    # print("original_pitches")
+    # print(original_pitches[0:7])
+    # # print next 30 elements of original_pitches with header
+    # print("original_pitches continued")
+    # print(original_pitches[7:37])
 
+    essence = MidiEssence(original_pitches)
+    result = essence.dia(Scales=essence.SCALES['NormUp'], p=[7, 5, -2, 2, -3])
+    scale = [0] + essence.SCALES['NormUp'][1:8] * 5
+    print('scale', scale)
+    print('results of dia', result)
 
-# Example usage
-# original_pitches = [60, 62, 64, 60, 65, 67, 69, 65, 67, 69] * 20
+    # extract from result the indices and the diatonic pitch differences
+    indices = list(result[0])
+    chr_p = essence.chr(Scales=essence.SCALES['NormUp'], p=result[1], starti=indices[0])
+    print('chr_p', chr_p)
 
-df = pd.read_pickle("../../data/interim/note_data_diff_encoded.pkl")
-pitch_data = df["Pitch_diff"].astype('int').tolist()
-
-# remove bogus data
-# remove 10th element from pitch_data, and other cheap trills
-pitch_data.pop(10)
-pitch_data.pop(22)
-
-# read the first 200 pitches from pitch_data into a list called original_pitches
-original_pitches = pitch_data[0:200]
-# print the first seven elements of original_pitches, and a header
-# print("original_pitches")
-# print(original_pitches[0:7])
-# # print next 30 elements of original_pitches with header
-# print("original_pitches continued")
-# print(original_pitches[7:37])
-
-essence = MidiEssence(original_pitches)
-result = essence.dia(Scales=essence.SCALES['NormUp'], p=[7, 5, -2, 2, -3])
-scale = [0] + essence.SCALES['NormUp'][1:8] * 5
-print('scale', scale)
-print('results of dia', result)
-
-# extract from result the indices and the diatonic pitch differences
-indices = list(result[0])
-chr_p = essence.chr(Scales=essence.SCALES['NormUp'], p=result[1], starti=indices[0])
-print('chr_p', chr_p)
-
-#essence.algorithm_encoding_generator()
-
-# # Test the generated encoding
-# exec(essence.algorithm_encoding)
-
-# # Validate the result
-# if result == original_pitches:
-#     print("The algorithm encoding successfully regenerated the original pitch sequence.")
-# else:
-#     print("The algorithm encoding failed to regenerate the original pitch sequence.")
-# print(result)
-# compare result with original_pitches
-# print(result == original_pitches)
-# print the meaningful differences between result and original_pitches
-# print([i for i, (a, b) in enumerate(zip(result, original_pitches)) if a != b])
-
-# print(essence.algorithm_encoding)
-
-# # set a variable to this [0, 2, 2, 1, 2, 2, 2, 1], except reverse the numbers and make them negative
-# new_scale = [-1 * x for x in reversed(MidiEssence.SCALES['NormUp'])]
-# print(new_scale)
-
-# essence.example_algo(original_pitches)
-# print("result:")
-# print(result)
-# print("pitch_data:")
-# print(pitch_data[:len(result)+1])
 

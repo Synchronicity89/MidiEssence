@@ -15,10 +15,10 @@ if not os.path.exists(folder_path):
     os.makedirs("../../data/processed")
     os.makedirs("../../data/external")
     # download the MIDI files from the web based on this url pattern https://www.bachcentral.com/invent/invent1.mid, download 1-8
-for i in range(1, 9):
-    url = "https://www.bachcentral.com/invent/invent" + str(i) + ".mid"
-    print("Downloading " + url)
-    urllib.request.urlretrieve(url, folder_path + "/invent" + str(i) + ".mid")
+    for i in range(1, 9):
+        url = "https://www.bachcentral.com/invent/invent" + str(i) + ".mid"
+        print("Downloading " + url)
+        urllib.request.urlretrieve(url, folder_path + "/invent" + str(i) + ".mid")
 
 # Get a list of all files in the folder
 file_list = os.listdir(folder_path)
@@ -78,3 +78,4 @@ df0.to_csv("../../data/interim/sample_note_data.csv", index=False)
 # Save the DataFrame as a pickle file
 df.to_pickle("../../data/interim/note_data.pkl")
 df
+

@@ -106,31 +106,31 @@ def decode_diffs(df_encoded):
 
     
     return df_decoded
+if __name__ == "__main__":
+    # read the note_data.pkl file into a dataframe
+    df = pd.read_pickle("../../data/interim/note_data.pkl")
 
-# read the note_data.pkl file into a dataframe
-df = pd.read_pickle("../../data/interim/note_data.pkl")
+    # encode the dataframe
+    df_encoded = encode_diffs(df)
 
-# encode the dataframe
-df_encoded = encode_diffs(df)
+    # write the encoded dataframe to a pickle file called note_data_diff_encoded.pkl in the interim folder
+    df_encoded.to_pickle("../../data/interim/note_data_diff_encoded.pkl")
 
-# write the encoded dataframe to a pickle file called note_data_diff_encoded.pkl in the interim folder
-df_encoded.to_pickle("../../data/interim/note_data_diff_encoded.pkl")
+    # decode the dataframe
+    df_decoded = decode_diffs(df_encoded)
+    print("df:")
+    print()
+    print(df)
+    print("df_encoded:")
+    print()
+    print(df_encoded)
+    print("df_decoded:")
+    print()
+    print(df_decoded)
+    # check that the decoded dataframe is the same as the original dataframe
 
-# decode the dataframe
-df_decoded = decode_diffs(df_encoded)
-print("df:")
-print()
-print(df)
-print("df_encoded:")
-print()
-print(df_encoded)
-print("df_decoded:")
-print()
-print(df_decoded)
-# check that the decoded dataframe is the same as the original dataframe
+    CompareDataframes(df, df_decoded)
 
-CompareDataframes(df, df_decoded)
-
-print(df_decoded.info())
-print(df.info())
+    print(df_decoded.info())
+    print(df.info())
 
