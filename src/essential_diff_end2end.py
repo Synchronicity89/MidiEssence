@@ -6,7 +6,7 @@ import os
 os.chdir("data")
 import data.make_dataset
 
-from features.build_features import encode_diffs, decode_diffs
+from features.build_features_diff import encode_diffs, decode_diffs
 # read the note_data.pkl file into a dataframe
 os.chdir("../features")
 df = pd.read_pickle("../../data/interim/note_data.pkl")
@@ -18,7 +18,7 @@ df_encoded = encode_diffs(df)
 # write the encoded dataframe to a pickle file called note_data_diff_encoded.pkl in the interim folder
 df_encoded.to_pickle("../../data/interim/note_data_diff_encoded.pkl")
 
-from features.build_midiessence import MidiEssence
+from features.build_midiessence_diff import MidiEssence_diff
 df = pd.read_pickle("../../data/interim/note_data_diff_encoded.pkl")
 pitch_data = df["Pitch_diff"].astype('int').tolist()
 
@@ -30,7 +30,7 @@ pitch_data = df["Pitch_diff"].astype('int').tolist()
 pitch_data.pop(10)
 pitch_data.pop(22)
 
-essence = MidiEssence()
+essence = MidiEssence_diff()
 result = essence.dia(Scales=essence.SCALES['NormUp'], p=[7, 5, -2, 2, -3])
 scale = [0] + essence.SCALES['NormUp'][1:8] * 5
 print('scale', scale)
