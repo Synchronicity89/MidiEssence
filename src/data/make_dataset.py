@@ -217,24 +217,6 @@ for index, row in df0.iterrows():
         df0.at[index, 'End'] += row_prev['End_mido'] - row_prev['Start_mido']
 
 
-
-
-
-
-    # # if this is the first row, then set Start to 0.0
-    # if index == 0:
-    #     df0.at[index, 'Start'] = df0.at[index, 'Start_mido']
-    #     # df0.at[index, 'Start'] = 0
-    # else:
-    #     # get the previous row
-    #     row_prev = df0.iloc[index - 1]
-    #     # set the Start value of the current row to the sum of the Start_mido of the previous row and the End_mido of the previous row
-    #     df0.at[index, 'Start'] = row_prev['Start_mido'] + row_prev['End'] + 0.0 if index == 1 else row_prev['Start']
-
-
-
-
-
 # Save df0 as a CSV file
 df0.to_csv("../../data/interim/sample_note_data.csv", index=False)
 
