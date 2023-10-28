@@ -395,6 +395,13 @@ class MidiEssence:
                 print(f"pit_lowered[{indx}], {p} != {pit_lowered[indx]}")
             indx += 1
 
+        # Transpose the pitches of result0 to match correct octave of original
+        # get the 
+        octave_diff = (pitches_list[0][0] - result0[0])/12
+        result0 = [x + 12 * octave_diff for x in result0]
+        # force into result in case it somehow is only a copy
+        result = [[int(x) for x in result0], result1]
+
     def Tr(self, p, offset):
         return [x + offset for x in p]
 
@@ -426,8 +433,22 @@ if __name__ == "__main__":
 
     essence.example_algo(original_pitches_lists)
 
+    # print first 80 pitches in result[0] with header and likewise for result[1]
 
+    # print first 80 pitches in result[0] with header
+    print("Result[0]:")
+    print(result[0][:80])
+    print('-'*60)
+    print("original_pitches_lists[0]:")
+    print(original_pitches_lists[0][:80])
+    
 
+    # print first 80 pitches in result[1] with header
+    print("\nResult[1]:")
+    print(result[1][:80])
+    print('-'*60)
+    print("original_pitches_lists[1]:")
+    print(original_pitches_lists[1][:80])
 
 
 
