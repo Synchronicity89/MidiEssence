@@ -145,6 +145,7 @@ class MidiEssence:
             'p5' : [64, 62, 60, 59, 62, 61, 64],  # TODO: needs to be used in RH somewhere
             'ms_5_0' :[[4, 0, -5], [6, -4, -5], [8, -4, -5]],
             'ms_11_12' :[[6, 4, 2], [4, 4, 2], [5, 4, -3], [9, 2, -3]],
+            'ms_02_03_lh' : [[6, 4, 0], [4, 4, 0], [-2, 4, 7], [2, 2, 7]],            
         }
         # after each change to result, print the result
         # measures 1 and 2 of right hand of invention 1 by Bach
@@ -238,7 +239,8 @@ class MidiEssence:
 
 
         # measures 1 and 2 of left hand of invention 1 by Bach
-        offset = (1 + octave_factor) * 12
+
+        offset = (1 + octave_factor) * 12        
         result1 += self.Tr(P['p0'], offset)
         print(result1)
         result1 += P['p2']
@@ -250,98 +252,64 @@ class MidiEssence:
         result1 += [60]
         print(result1)
 
+        # measures 2 thru 6 of left hand of invention 1 by Bach
+
         p1_dia = self.dia(N, p1)
-        result1 += self.chr(N, 6 + ((1 + octave_factor) * 7), p0_dia[1][:4])
-        print(result1)
-        result1 += self.chr(N, 4 + ((1 + octave_factor) * 7), p0_dia[1][:4])
-        print(result1)
-        result1 += self.chr(self.Tr(N, 7), -2 + ((1 + octave_factor) * 7), p0_dia[1][:4])
-        print(result1)
-        result1 += self.chr(self.Tr(N, 7), 2 + ((1 + octave_factor) * 7), p0_dia[1][:2])
-        print(result1)
+        for do, ed, co in P['ms_02_03_lh']:
+            result1 += self.chr(N, do + ((1 + octave_factor) * 7), p0_dia[1][:ed], co)
         result1 += [x + 2 + offset for x in P['p0']] + [55]
-        print(result1)
-        result1 += self.chr(self.Tr(N, 7), -5 + ((1 + octave_factor) * 7), p0_dia[1][:4])
-        print(result1)
-        result1 += self.chr(self.Tr(N, 7), -1 + ((1 + octave_factor) * 7), p0_dia[1][:2])
-        print(result1)
+        result1 += self.chr(N, -5 + ((1 + octave_factor) * 7), p0_dia[1][:4], 7)
+        result1 += self.chr(N, -1 + ((1 + octave_factor) * 7), p0_dia[1][:2], 7)
         result1 += [52, 47, 48, 50, 38]
-        print(result1)
+
+        # measures 7 -
+
         temp = [x - 5 + offset for x in result0[:24]]
         # remove the trills
         # remove the 11th and 12th pitches of temp, plus remove the 3rd and 2nd to last pitches of temp
-        temp = temp[:10] + temp[12:-2] + temp[-2:] + [62, 55]
-        result1 += temp
-        print(result1[60:])
+        result1 += temp[:10] + temp[12:-2] + temp[-2:] + [62, 55]
         result1 += self.Tr(p0_dia_5_inv_chr, 5 + offset)
-        print(result1[60:])
+
+
         result1 += self.Tr(P['p0'][2:-1], offset+12)
-        print(result1[60:])
-        temp = self.Tr(self.chr(N, 8, p0_dia_inv), offset)
-        result1 += temp
-        print(result1[60:])
-        temp = P['p0'][2:-1]
-        temp = self.dia(N, temp)
-        temp = self.chr(N, 1, temp[1])
-        result1 += self.Tr(temp, offset + 12)
-        print(result1[60:])
-        temp = p0_dia_inv
-        temp = self.chr(N, 6, temp)
-        result1 += self.Tr(temp, offset + 5)
-        print(result1[60:])
-        temp = p0_dia_inv
-        temp = self.chr(N, 4, temp)
-        result1 += self.Tr(temp, offset + 5)
-        print(result1[60:])
-        temp = p0_dia_inv
-        temp = self.chr(N, 5, temp)
-        result1 += self.Tr(temp, offset + 0)
-        print(result1[120:])
-        temp = p0_dia_inv
-        temp = self.chr(self.Tr(H, -3), 5, temp)
-        result1 += self.Tr(temp, offset + 0)
-        print(result1[120:])
+        result1 += self.chr(N, 8, p0_dia_inv, offset)
+
+        # measures 10 -
+
+        temp = self.dia(N, P['p0'][2:-1])
+        result1 += self.chr(N, 1, temp[1], offset + 12)
+        result1 += self.chr(N, 6, p0_dia_inv, offset + 5)
+
+        # measures 11 -
+
+        result1 += self.chr(N, 4, p0_dia_inv, offset + 5)
+
+        # measures 12 -
+
+        result1 += self.chr(N, 5, p0_dia_inv, offset)
+        result1 += self.chr(H, 5, p0_dia_inv, offset - 3)
+
+        # measures 13 -
+
         result1 += [52, 62, 60, 62, 60]
-        print(result1[120:])
         #TODO: find how the RH did it and copy that
         result1 += P['p4']
-        print(result1[120:])
-        temp = p0_dia_inv[3:][:-1]
-        temp = self.chr(N, 4, temp)
-        result1 += self.Tr(temp, offset + 0)
-        print(result1[120:])
-        temp = p0_dia_inv[3:][:-1]
-        temp = self.chr(N, 6, temp)
-        result1 += self.Tr(temp, offset + 0)
-        print(result1[120:])
+        result1 += self.chr(N, 4, p0_dia_inv[3:][:-1], offset)
+        result1 += self.chr(N, 6, p0_dia_inv[3:][:-1], offset)
         result1 += [64, 57, 64, 52, 57, 45]
-        print(result1[120:])
+
+        # measures 15 -
+
         result1 += self.xte(P['p5'], -2)
-        print(result1[120:])
-        temp = P['p0']
-        temp = self.dia(N, temp)
-        temp = self.chr(N, 5, temp[1])
-        temp = self.Tr(temp, offset + 0)
-        result1 += self.xte(temp, 2)
-        print(result1[120:])
-        temp = p0_dia_5_inv_chr
-        result1 += self.Tr(temp, offset)
-        print(result1[120:])
+        result1 += self.xte(self.chr(N, 5, self.dia(N, P['p0'])[1], offset), 2)
+        result1 += self.Tr(p0_dia_5_inv_chr, offset)
         result1 += self.Tr(useinLHtoo, offset - 7)
-        print(result1[180:])
-        result1 += self.Tr(self.chr(self.Tr(N, 4), -1, [x + 7 for x in p0_dia_inv[:4]]), offset - 11)
-        print(result1[180:])
-        result1 += self.Tr(self.chr(self.Tr(N, 4), 1, [x + 7 for x in p0_dia_inv[:4]]), offset - 11)
-        print(result1[180:])
-        temp = self.Tr(self.chr(self.Tr(N, 4), 3, [x + 7 for x in p0_dia_inv[:3]]), offset - 11)
-        result1 += self.xte(temp, 2)
-        print(result1[180:])
+        result1 += self.chr(self.Tr(N, 4), -1, [x + 7 for x in p0_dia_inv[:4]], offset - 11)
+        result1 += self.chr(self.Tr(N, 4), 1, [x + 7 for x in p0_dia_inv[:4]], offset - 11)
+        result1 += self.xte(self.chr(self.Tr(N, 4), 3, [x + 7 for x in p0_dia_inv[:3]], offset - 11), 2)
         result1 += self.Tr(useinLHtoo, offset - 12)
-        print(result1[180:])
         result1 += self.Tr(P['p0'][:6], offset)
-        print(result1[180:])
         result1 += [53, 55, 43, 48]
-        print(result1[180:])
 
         # just copy the data from the right hand
         # results1 += [x - 12 for x in result0[:]]
@@ -440,96 +408,4 @@ if __name__ == "__main__":
             break
     
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    run_tests = False
-
-    if run_tests:
-        result0 = essence.dia(Scales=Up('N', 4), p=[7, 12, 10, 12, 9])
-        scale = Up('N', 4)
-        print('scale', scale)
-        print('results of dia', result0)
-
-        chr_p = essence.chr(Up(), result0, result0[0])
-        print('chr_p', chr_p)
-
-        # generate 2 random test patterns from each of the 4 scales and convert to diatonic and back
-        # keep the random patterns to 8 notes or less, and the range of the pattens to 4 octaves or less
-        no_conversion_count = 0
-        simple_error_count = 0
-        tests = 60
-        simple_output = ""
-        import random
-        random.seed(42)
-        for j in range(4):
-            for i in range(tests):
-                scale = Up(list(S.keys())[j][0], 4)
-                print('scale', scale)
-                p = random.sample(range(0, len(scale)), random.randint(1, 7))
-                print('p', p)
-                result0 = essence.dia(scale, p)
-                print('results of dia', result0)
-                if len(result0[1]) > 0:
-                    chr_p = essence.chr(scale, result0, result0[0])
-                    print('chr_p', chr_p)
-                    # compare the original p with the chr_p and print a message if they are not the same
-                    if p != chr_p:
-                        print(f"p != chr_p for scale {list(S.keys())[j]}")
-                        print(f"p = {p}")
-                        print(f"chr_p = {chr_p}")
-                        result0 = essence.dia(scale, p)
-                        chr_p = essence.chr(scale, result0, result0[0])
-                    else:
-                        print(f"p == chr_p for scale {list(S.keys())[j]}")
-                    # what if a very simple formula had been used to convert chromatic to diatonic
-                    # do a simplistic conversion of p to chr_p using ideas from this formula (here in Excel format): chr_p_simple = MID("CDEFGAB", 1 + MOD( ROUND(p*12/7, 0), 7), 1)
-                    dia_p_simple = []
-                    for x in p:
-                        y = round((x)*7/12)
-                        dia_p_simple += [y]
-                    print('dia_p_simple', dia_p_simple)
-                    # compare the original p with the chr_p_simple and append newlines and messages to simple_output if they are not the same
-                    if result0[1] != dia_p_simple:
-                        simple_error_count += 1
-                        print(f"p != dia_p_simple for scale {list(S.keys())[j]}")
-                        print(f"p = {p}")
-                        print(f"dia_p_simple = {dia_p_simple}")
-                        simple_output += f"p != dia_p_simple for scale {list(S.keys())[j]}\n"
-                        simple_output += f"p = {p}\n"
-                        simple_output += f"dia_p_simple = {dia_p_simple}\n"
-                    else:
-                        print(f"p == chr_p_simple for scale {list(S.keys())[j]}")
-                else:
-                    no_conversion_count += 1
-                    print(f"dia returned empty list for scale {list(S.keys())[j]}")
-
-
-        # print the simple_output
-        print('_' * 60 + '\n')
-        print('_' * 60 + '\n')
-        print(simple_output)
-
-        # print the simple_error_count divided by the number of tests * 4, as a percentage with a header
-        print('_' * 60 + '\n')
-        print(f"simple_error_count = {simple_error_count} out of {tests*4} = {(no_conversion_count + simple_error_count)/(tests*4)*100}%")
-
-        # running the code shows that the simple conversion is not good enough, failing almost 75% of the time
 
