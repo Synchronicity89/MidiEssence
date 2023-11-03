@@ -2,9 +2,22 @@ MidiEssence
 ==============================
 
 
-MidiEssence is incomplete, but the purpose of MidiEssence is to create an encoding "essence" of a piece of symbolic music in the MIDI format.  The essence or encoding, captures patterns of melody, rhythm, and velocity (note volume), and also contains enough information so that the decoder can generate a MIDI file very similar to the original MIDI file.  It may lose some information such as precise velocity information, but pitch and rhythm should be preserved.
+MidiEssence is incomplete.  
+
+The purpose of MidiEssence is to create an encoding "essence" of a piece of symbolic music in the MIDI format.  The essence or encoding, captures patterns of melody, rhythm, and velocity (note volume), and also contains enough information so that the decoder can generate a MIDI file very similar to the original MIDI file.  It may lose some information such as precise velocity information, but pitch and rhythm should be preserved.
 
 Current state of project:
+
+- manually written code compresses Bach Invention No. 1. into an encoding. The encoding can be tweaked and a new invention generated with different pitches than the original.
+
+- How to run it and see it work: 
+-- src/essential_end2end.py: 
+--- generates pitch-tweaked midi files in data/interim/BachInventions.  The tweaked ones' filenames start with 01 02 etc
+
+- src/features/build_midiessence.py  does most of the work of converting between chromatic to diatonic and back
+
+- src/data/make_midis.py writes tweaked midis
+
 - src/data/make_dataset.py reads most of the Bach 2 part Invention MIDI files and extracts the data into a DataFrame
 
 - src\visualization\visualize.py visualizes the first 100 notes of each Instrument part, some of which run longer than the other part.  Here the parts are the right hand part and the left hand part
@@ -13,7 +26,9 @@ Current state of project:
 
 Future scope:
 
-The data that the visualization runs on is a CSV file that is short enough to paste into a GPT 4 prompt, so one can ask GPT 4 how to find the patterns and encode the symbolic music, thereby capturing the essence.  This might be iterated using the OpenAI API, so that the LLM gets feedback as to how well the encoding and decoding is going, and can generate a new version of the code.  Executing code automatically that has been generated from an AI, without a human looking at it first, may pose an increasing amount of risk (though right now it is neglible), so a human will probably be in the loop, with as much automation as possible
+The data that the visualization runs on is a CSV file.  This CSV is short enough to paste into a GPT 4 prompt, so one could ask GPT 4 how to find the patterns and encode the symbolic music, thereby capturing the essence, however this seems to be too big of a job for the technology right now, even if carefully prompted.  
+The next steps might be to polish the hand-coded encoding so that it becomes more of a language.  Also the rhythm and velociy need a similar treatment.  The data might become three dimensional at that point, in which case numpy might be employed.  We are already at a stage where a lot of training data could already be generated that could be used to train a deep learning model.
+
 
 
 
