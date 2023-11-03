@@ -18,4 +18,6 @@ class TestBuildMidiEssence(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    # just running this file in vs code with F5 will not work.  Use python -m unittest discover -s src -p "*test*.py" from the root folder
+    # or "python -m pytest" from the root folder or most any folder
     unittest.main()

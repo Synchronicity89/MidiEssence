@@ -2,6 +2,10 @@ import pandas as pd
 from collections import Counter
 from itertools import combinations
 import itertools
+import copy
+import random
+
+
 
 global S
 S = {
@@ -36,6 +40,15 @@ class MidiEssence:
    
     def __init__(self):
         self.algorithm_encoding = ""
+        self.zzz = None
+
+    def make_z(self, data):
+        for item in data:
+            yield item
+
+    @property
+    def z(self):
+        return next(self.zzz)        
 
     def algorithm_encoding_generator(self):
 
@@ -115,6 +128,7 @@ class MidiEssence:
         
         return (offsets[: len(sums)+1], indi)
 
+
     # =MID("CDEFGAB", 1 +MOD( ROUND($A2*7/12, 0), 7), 1)
     def chr(self, Scales, starti, p, offset=0):
         # do the reverse of dia
@@ -122,8 +136,71 @@ class MidiEssence:
         # return a list of chromatic pitch differences
         output = [Scales[x + starti] + offset for x in p]
         return output
+
+    def flatten_dict(self, d):
+        flat_list = []
+        struct = {}
+
+        for key, value in d.items():
+            struct[key] = []
+            for i, item in enumerate(value):
+                if isinstance(item, list):
+                    struct[key].append((i, len(item)))
+                    flat_list.extend(item)
+                else:
+                    struct[key].append((i, 1))
+                    flat_list.append(item)
+
+        return flat_list, struct
+
+    def unflatten_dict(self, flat_list, struct):
+        d = {}
+        index = 0
+
+        for key, value in struct.items():
+            d[key] = []
+            for item in value:
+                i, length = item
+                if length == 1:
+                    d[key].insert(i, flat_list[index])
+                    index += 1
+                else:
+                    d[key].insert(i, flat_list[index:index+length])
+                    index += length
+
+        return d
+
+    def randomize_dict_values(self, dict):
+        # d is a flat 1 dimensional list of numbers.
+        # We want to subtly vary the integers in the list, but not too much, keeping them as integers
+        # On average we want a 20% chance that a number will go up or down by up to 50%, or up or down by 4, whichever is smaller, and a 
+        # 5% chance that a number will go up or down by up to 100% or up or down by 8, whichever is smaller
+        # We want to keep the numbers in the same order, so we can't just shuffle the list
+        # We want to keep the numbers within the range of the original numbers, in the sense that they are similar
+        d, struct = self.flatten_dict(dict)
+        d_copy = []
+        factor = 0
+        for x in d:
+            # generate a random integer that has a 20% chance of being 50% bigger or smaller than x
+            r = random.random()
+            if r < 0.2:
+                factor = 1.5
+            # generate a random integer that has  a 5% chance of being 100% bigger or smaller than x
+            elif r < 0.05:
+                factor = 2
+            else:
+                d_copy.append(x)
+                continue
+            min = -abs(round(x - (x * factor)))
+            max = abs(round( x + (x * factor)))
+            if min == max: continue
+            candidate = x + random.randint( min , max )
+            d_copy.append(candidate)
+
+
+        return self.unflatten_dict(d_copy, struct)
  
-    def example_algo(self, pitches_list):
+    def example_algo(self, pitches_list, mut=None):
         # this is an example of an algorithm that can be generated, so it won't assembled into the algorithm_encoding
         # this is just to show how the algorithm_encoding can be used
         pit = pitches_list[0]
@@ -136,7 +213,7 @@ class MidiEssence:
         result1 = []
         result.append(result0)
         result.append(result1)
-        P = {
+        P_orig = {
             'p0' : N[0:4] + [2, 4, 0],
             'p1' : [7, 12, 11, 9, 11, 12,14],
             'p2' : [55, 43],
@@ -145,8 +222,24 @@ class MidiEssence:
             'p5' : [64, 62, 60, 59, 62, 61, 64],  # TODO: needs to be used in RH somewhere
             'ms_5_0' :[[4, 0, -5], [6, -4, -5], [8, -4, -5]],
             'ms_11_12' :[[6, 4, 2], [4, 4, 2], [5, 4, -3], [9, 2, -3]],
-            'ms_02_03_lh' : [[6, 4, 0], [4, 4, 0], [-2, 4, 7], [2, 2, 7]],            
+            'ms_06' : [11, 12, 14, 19, 11, 12, 11, 9, 7, 7],
+            'ms_07_09' : [[0, 7, -1], [1, 7, 2], [0, 7], 5, [13, 16, 14]],
+            'ms_13_14' : [4, 7, 7, 11, [8, 17, 16, 14, 12, 14, 12, 11, 9, 9]],
+            'ms_15_19' : [[9, 1], 7, [8, 2], [7, 1], [9, 1]],
+            'ms_20_22' : [[11, 3], [19, 16, 17, 16, 14, 12, 12], [-1, 5], [11, 12, 4, 2, 12, 5, 11, 4]],
+            'ms_01_02_lh' : [[4, 5]],
+            'ms_02_03_lh' : [[6, 0], [4, 0], [-2, 7], [2, 7]],
+            'ms_04_06_lh' : [[2, 5], [-5, 7], [-1, 7], [52, 47, 48, 50, 38]],
+            'ms_07_12_lh' : [5, -7, 5, 12, 8, [1, 12], [6, 5], [4, 5], 5, [5, -3]],
+            'ms_13_15_lh' : [[52, 62, 60, 62, 60], 4, 6, [64, 57, 64, 52, 57, 45]],
+            'ms_16_22_lh' : [-2, [5, 2], -7, [-1, 7, 7], [1, 7, 7], [3, 7, 7, 2], -12, [53, 55, 43, 48]]
         }
+        P = None
+        if mut != None:
+            P = mut(P_orig)
+        else:
+            P = P_orig
+
         # after each change to result, print the result
         # measures 1 and 2 of right hand of invention 1 by Bach
         # print(result0)
@@ -168,6 +261,7 @@ class MidiEssence:
         p0_dia = self.dia(N, P['p0'])
         p0_dia_inv = [max(self.xte(p0_dia[1], 1)) - x + 1 for x in self.xte(p0_dia[1], 1)]
 
+        # entire pattern is repeated 1 diatonic step lower each time
         for do in self.chr(N, -2, p0_dia_inv[:3], 4):
             result0 += self.chr(N, do, p0_dia_inv)
 
@@ -181,20 +275,24 @@ class MidiEssence:
         for do, st, co in P['ms_5_0']:        
             result0 += self.chr(N, do, p0_dia_inv[st:], co)
         
-        result0 += [11, 12, 14, 19, 11, 12, 11, 9, 7, 7]
+        result0 += P['ms_06']
 
+        self.zzz = self.make_z(P['ms_07_09'])
         # measures 7 and 8 of right hand of invention 1 by Bach
 
-        p0_dia_5_chr = self.chr(N, 0, p0_dia[1], 7)
-        result0 += self.xte(p0_dia_5_chr, -1)
-        result0 += self.xte(self.chr(N, 1, p0_dia[1], 7), 2)
+        o = self.z
+        result0 += self.xte(self.chr(N, o[0], p0_dia[1], o[1]), o[2])
+        o = self.z
 
         # measures 9 and 10 of right hand of invention 1 by Bach
 
-        p0_dia_5_inv_chr = self.chr(N, 0, p0_dia_inv, 7)
+        result0 += self.xte(self.chr(N, o[0], p0_dia[1], o[1]), o[2])
+        o = self.z
+        p0_dia_5_inv_chr = self.chr(N, o[0], p0_dia_inv, o[1])
         result0 += p0_dia_5_inv_chr
-        result0 += self.chr(N, 5, p0_dia_inv)[:-3]
-        result0 += [13, 16, 14]
+
+        result0 += self.chr(N, self.z, p0_dia_inv)[:-3]
+        result0 += self.z
 
         # measures 11 and 12 of right hand of invention 1 by Bach
 
@@ -202,33 +300,41 @@ class MidiEssence:
             result0 += self.chr(M, do, p0_dia[1][:ed], co)
 
         # measures 13 and 14 of right hand of invention 1 by Bach
-
-        result0 += self.chr(self.Tr(M, -3), 4, p0_dia[1])
-        result0 += self.chr(self.Tr(M, -3), 7, p0_dia_inv[:3])
-        result0 += self.chr(self.Tr(M, -3), 7, p0_dia_inv[:6])
-        result0 += self.chr(self.Tr(M, -3), 11, p0_dia_inv[-4:])
+        self.zzz = self.make_z(P['ms_13_14'])
+        result0 += self.chr(M, self.z, p0_dia[1],-3)
+        result0 += self.chr(M, self.z, p0_dia_inv[:3],-3)
+        result0 += self.chr(M, self.z, p0_dia_inv[:6],-3)
+        result0 += self.chr(M, self.z, p0_dia_inv[-4:],-3)
         result0 += self.Tr(P['p0'][2:5], 12)
-        result0 += [8, 17, 16, 14, 12, 14, 12, 11, 9, 9]
+        result0 += self.z
 
         # measures 15 thru 17 of right hand of invention 1 by Bach
 
+        self.zzz = self.make_z(P['ms_15_19'])
         result0 += p0_dia_inv_chr0
-        result0 += self.chr(N, 9, self.xte(p0_dia[1], 1))
-        result0 += self.chr(N, 7, p0_dia_inv)
+        o = self.z
+        result0 += self.chr(N, o[0], self.xte(p0_dia[1], o[1]))
+        result0 += self.chr(N, self.z, p0_dia_inv)
 
         # measures 18 thru 19 of right hand of invention 1 by Bach
 
-        useinLHtoo = self.xte(self.chr(N, 8, p0_dia[1]), 2)
+        o = self.z
+        useinLHtoo = self.xte(self.chr(N, o[0], p0_dia[1]), o[1])
         result0 += useinLHtoo
-        result0 += self.chr(N, 7, self.xte(p0_dia[1], 1))
-        result0 += self.chr(N, 9, self.xte(p0_dia[1], 1))
+        o = self.z
+        result0 += self.chr(N, o[0], self.xte(p0_dia[1], o[1]))
+        o = self.z
+        result0 += self.chr(N, o[0], self.xte(p0_dia[1], o[1]))
 
         # measures 20 thru 22 of right hand of invention 1 by Bach
 
-        result0 += self.chr(N, 11, self.xte(p0_dia[1], 3))
-        result0 += [19, 16, 17, 16, 14, 12, 12]
-        result0 += self.chr(N, -1, p0_dia_inv, 5)
-        result0 += [11, 12, 4, 2, 12, 5, 11, 4]
+        self.zzz = self.make_z(P['ms_20_22'])
+        o = self.z
+        result0 += self.chr(N, o[0], self.xte(p0_dia[1], o[1]))
+        result0 += self.z
+        o = self.z
+        result0 += self.chr(N, o[0], p0_dia_inv, o[1])
+        result0 += self.z
 
         # done with RH, now do left
         pit = pitches_list[1]
@@ -240,79 +346,93 @@ class MidiEssence:
 
         # measures 1 and 2 of left hand of invention 1 by Bach
 
-        offset = (1 + octave_factor) * 12        
+        offset = (1 + octave_factor) * 12
+        offset_d = (1 + octave_factor) * 7        
         result1 += self.Tr(P['p0'], offset)
-        print(result1)
         result1 += P['p2']
-        print(result1)
 
-        # probably should obtain this via diatonic means
-        result1 += [x + 7 + offset for x in P['p0']]
-        print(result1)
-        result1 += [60]
-        print(result1)
+        o = P['ms_01_02_lh'][0]
+        result1 += self.xte(self.chr(N, o[0], p0_dia[1], offset), o[1])
 
         # measures 2 thru 6 of left hand of invention 1 by Bach
-
+        index = 0
         p1_dia = self.dia(N, p1)
-        for do, ed, co in P['ms_02_03_lh']:
-            result1 += self.chr(N, do + ((1 + octave_factor) * 7), p0_dia[1][:ed], co)
-        result1 += [x + 2 + offset for x in P['p0']] + [55]
-        result1 += self.chr(N, -5 + ((1 + octave_factor) * 7), p0_dia[1][:4], 7)
-        result1 += self.chr(N, -1 + ((1 + octave_factor) * 7), p0_dia[1][:2], 7)
-        result1 += [52, 47, 48, 50, 38]
+        for do, co in P['ms_02_03_lh']:
+            result1 += self.chr(N, do + offset_d, p0_dia[1][:4 if index != 3 else 2], co)
+            index += 1
+
+        self.zzz = self.make_z(P['ms_04_06_lh'])
+        o = self.z
+        result1 += self.xte(self.Tr(P['p0'], o[0] + offset), o[1])
+        o = self.z
+        result1 += self.chr(N, o[0] + offset_d, p0_dia[1][:4], o[1])
+        o = self.z
+        result1 += self.chr(N, o[0] + offset_d, p0_dia[1][:2], o[1])
+        result1 += self.z
+
 
         # measures 7 -
 
-        temp = [x - 5 + offset for x in result0[:24]]
+        self.zzz = self.make_z(P['ms_07_12_lh'])
+        o = self.z
+        temp = [x - o + offset for x in result0[:27]]
         # remove the trills
         # remove the 11th and 12th pitches of temp, plus remove the 3rd and 2nd to last pitches of temp
-        result1 += temp[:10] + temp[12:-2] + temp[-2:] + [62, 55]
-        result1 += self.Tr(p0_dia_5_inv_chr, 5 + offset)
+        result1 += self.xte(temp[:10] + temp[12:-5] + temp[-5:-3] + temp[-1:], self.z)
+        result1 += self.Tr(p0_dia_5_inv_chr, self.z + offset)
 
 
-        result1 += self.Tr(P['p0'][2:-1], offset+12)
-        result1 += self.chr(N, 8, p0_dia_inv, offset)
+        result1 += self.Tr(P['p0'][2:-1], offset + self.z)
+        result1 += self.chr(N, self.z, p0_dia_inv, offset)
 
         # measures 10 -
 
         temp = self.dia(N, P['p0'][2:-1])
-        result1 += self.chr(N, 1, temp[1], offset + 12)
-        result1 += self.chr(N, 6, p0_dia_inv, offset + 5)
+        o = self.z
+        result1 += self.chr(N, o[0], temp[1], offset + o[1])
+        o = self.z
+        result1 += self.chr(N, o[0], p0_dia_inv, offset + o[1])
 
         # measures 11 -
 
-        result1 += self.chr(N, 4, p0_dia_inv, offset + 5)
+        o = self.z
+        result1 += self.chr(N, o[0], p0_dia_inv, offset + o[1])
 
         # measures 12 -
 
-        result1 += self.chr(N, 5, p0_dia_inv, offset)
-        result1 += self.chr(H, 5, p0_dia_inv, offset - 3)
+        result1 += self.chr(N, self.z, p0_dia_inv, offset)
+        o = self.z
+        result1 += self.chr(H, o[0], p0_dia_inv, offset + o[1])
 
         # measures 13 -
 
-        result1 += [52, 62, 60, 62, 60]
+        self.zzz = self.make_z(P['ms_13_15_lh'])
+
+        result1 += self.z
         #TODO: find how the RH did it and copy that
         result1 += P['p4']
-        result1 += self.chr(N, 4, p0_dia_inv[3:][:-1], offset)
-        result1 += self.chr(N, 6, p0_dia_inv[3:][:-1], offset)
-        result1 += [64, 57, 64, 52, 57, 45]
+        result1 += self.chr(N, self.z, p0_dia_inv[3:][:-1], offset)
+        result1 += self.chr(N, self.z, p0_dia_inv[3:][:-1], offset)
+        result1 += self.z
 
         # measures 15 -
+        self.zzz = self.make_z(P['ms_16_22_lh'])
 
-        result1 += self.xte(P['p5'], -2)
-        result1 += self.xte(self.chr(N, 5, self.dia(N, P['p0'])[1], offset), 2)
+        result1 += self.xte(P['p5'], self.z)
+        o = self.z
+        result1 += self.xte(self.chr(N, o[0], self.dia(N, P['p0'])[1], offset), o[1])
         result1 += self.Tr(p0_dia_5_inv_chr, offset)
-        result1 += self.Tr(useinLHtoo, offset - 7)
-        result1 += self.chr(self.Tr(N, 4), -1, [x + 7 for x in p0_dia_inv[:4]], offset - 11)
-        result1 += self.chr(self.Tr(N, 4), 1, [x + 7 for x in p0_dia_inv[:4]], offset - 11)
-        result1 += self.xte(self.chr(self.Tr(N, 4), 3, [x + 7 for x in p0_dia_inv[:3]], offset - 11), 2)
-        result1 += self.Tr(useinLHtoo, offset - 12)
+        result1 += self.Tr(useinLHtoo, offset + self.z)
+        o = self.z
+        result1 += self.chr(N, o[0], self.Tr(p0_dia_inv[:4], o[1]), offset - o[2])
+        o = self.z
+        result1 += self.chr(N, o[0], self.Tr(p0_dia_inv[:4], o[1]), offset - o[2])
+        o = self.z
+        result1 += self.xte(self.chr(N, o[0], self.Tr(p0_dia_inv[:3], o[1]), offset - o[2]), o[3])
+        result1 += self.Tr(useinLHtoo, offset + self.z)
         result1 += self.Tr(P['p0'][:6], offset)
-        result1 += [53, 55, 43, 48]
+        result1 += self.z
 
-        # just copy the data from the right hand
-        # results1 += [x - 12 for x in result0[:]]
 
         # subtract 12*octave_factor from all the numbers in pit
         pit_lowered = pit # [p - 12 * octave_factor for p in pit]
@@ -334,6 +454,7 @@ class MidiEssence:
         result0 = [x + 12 * octave_diff for x in result0]
         # force into result in case it somehow is only a copy
         result = [[int(x) for x in result0], result1]
+        return result
     
     def Tr(self, p, offset):
         return [x + offset for x in p]
@@ -352,11 +473,10 @@ class MidiEssence:
         '''
         return p0_dia_1 + [p0_dia_1[-1]+extend]
         
-if __name__ == "__main__":
+import pandas as pd
+import copy
 
-    # Example usage
-    # original_pitches = [60, 62, 64, 60, 65, 67, 69, 65, 67, 69] * 20
-
+def modify_note_data():
     df = pd.read_pickle("../../data/interim/note_data.pkl")
     pitch_data = df["Pitch"].astype('int').tolist()
 
@@ -368,44 +488,94 @@ if __name__ == "__main__":
     # extract from df into a list of lists original_pitches_lists, one list of pitches for each the instruments of a given filename
     filename = df['Filename'].unique()[0]
     original_pitches_lists = df[df['Filename'] == filename].groupby('Instrument')['Pitch'].apply(list).tolist()
-    
+
     essence = MidiEssence()
 
-    essence.example_algo(original_pitches_lists)
+    # essence.example_algo(original_pitches_lists)
+    for i in range(30):
+        try:
+            essence.example_algo(original_pitches_lists, essence.randomize_dict_values)
+        except:
+            print("exception\n")
+            continue
+        first_result = copy.deepcopy(result)
 
-    # print first 80 pitches in result[0] with header and likewise for result[1]
+        # compare first_result[0] with result[1]
+        print('-'*60)
+        print("Comparing pitches in first_result[0] with result[0]")
+        print('-'*60)
+        for i in range(len(first_result[0])):
+            if first_result[0][i] != result[0][i]:
+                print(f"first_result[0][{i}], {first_result[0][i]} != {result[0][i]}")
+                break
+        print('-'*60)
+        print("Comparing pitches in first_result[1] with result[1]")
+        print('-'*60)
+        for i in range(len(first_result[1])):
+            if first_result[1][i] != result[1][i]:
+                print(f"first_result[1][{i}], {first_result[1][i]} != {result[1][i]}")
+                break
 
-    # print first 80 pitches in result[0] with header
-    print("Result[0]:")
-    print(result[0][:80])
-    print('-'*60)
-    print("original_pitches_lists[0]:")
-    print(original_pitches_lists[0][:80])
-    
+        # print first 80 pitches in result[0] with header and likewise for result[1]
 
-    # print first 80 pitches in result[1] with header
-    print("\nResult[1]:")
-    print(result[1][:80])
-    print('-'*60)
-    print("original_pitches_lists[1]:")
-    print(original_pitches_lists[1][:80])
+        # print first 80 pitches in result[0] with header
+        print("Result[0]:")
+        print(result[0][:80])
+        print('-'*60)
+        print("original_pitches_lists[0]:")
+        print(original_pitches_lists[0][:80])
 
-    # compare the pitches in result[0] with original_pitches_lists[0] and print a message if they are not the same, and the index of the first difference.
-    # only compare len(result[0]) pairs of pitches
-    print('-'*60)
-    print("Comparing pitches in result[0] with original_pitches_lists[0]")
-    print('-'*60)
-    for i in range(len(result[0])):
-        if result[0][i] != original_pitches_lists[0][i]:
-            print(f"result[0][{i}], {result[0][i]} != {original_pitches_lists[0][i]}")
-            break
-    print('-'*60)
-    print("Comparing pitches in result[1] with original_pitches_lists[1]")
-    print('-'*60)
-    for i in range(len(result[1])):
-        if result[1][i] != original_pitches_lists[1][i]:
-            print(f"result[1][{i}], {result[1][i]} != {original_pitches_lists[1][i]}")
-            break
-    
+
+        # print first 80 pitches in result[1] with header
+        print("\nResult[1]:")
+        print(result[1][:80])
+        print('-'*60)
+        print("original_pitches_lists[1]:")
+        print(original_pitches_lists[1][:80])
+
+        # compare the pitches in result[0] with original_pitches_lists[0] and print a message if they are not the same, and the index of the first difference.
+        # only compare len(result[0]) pairs of pitches
+        print('-'*60)
+        print("Comparing pitches in result[0] with original_pitches_lists[0]")
+        print('-'*60)
+        for i in range(len(result[0])):
+            if result[0][i] != original_pitches_lists[0][i]:
+                print(f"result[0][{i}], {result[0][i]} != {original_pitches_lists[0][i]}")
+                break
+        print('-'*60)
+        print("Comparing pitches in result[1] with original_pitches_lists[1]")
+        print('-'*60)
+        for i in range(len(result[1])):
+            if result[1][i] != original_pitches_lists[1][i]:
+                print(f"result[1][{i}], {result[1][i]} != {original_pitches_lists[1][i]}")
+                break
+        pitch_parts = [result[0].copy(), result[1].copy()]
+        # go through the rows of df for the first filename and instrument and sequentially replace the pitch data from result[0]
+        filename = df['Filename'].unique()[0]
+        instruments = df[df['Filename'] == filename]['Instrument'].unique()
+        index = 0
+        for instrument in instruments:
+            res0 = df.loc[(df['Filename'] == filename) & (df['Instrument'] == instrument), 'Pitch']
+            len_res0 = len(res0)
+
+            if len(pitch_parts[index]) < len_res0:
+                padding = len_res0 - len(pitch_parts[index])
+                pitch_parts[index].extend([60] * padding)
+                print(f"Padding occurred: {padding} values were added to pitch_parts[{index}].")
+            elif len(pitch_parts[index]) > len_res0:
+                truncation = len(pitch_parts[index]) - len_res0
+                pitch_parts[index] = pitch_parts[index][:len_res0]
+                print(f"Truncation occurred: {truncation} values were removed from pitch_parts[{index}].")
+
+            df.loc[(df['Filename'] == filename) & (df['Instrument'] == instrument), 'Pitch'] = pitch_parts[index]
+            index += 1
+
+        # save the modified dataframe to a new pickle file
+        df.to_pickle(f"../../data/interim/note_data_modified{str(i).zfill(2)}.pkl")
+
+if __name__ == "__main__":
+    modify_note_data()
+
+
 
 
